@@ -11,6 +11,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Auth\SocialiteController;
+use App\Http\Controllers\Stripe\StripeController;
+use App\Http\Controllers\Stripe\StripeWebhookController;
 
 // GUEST ROUTES (Accessible without authentication)
 Route::middleware(['guest'])->group(function () {
@@ -79,7 +81,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
 });
 
-// AUTHENTICATED USER ROUTES (Require auth:sanctum middleware)
+// AUTHENTICATED USER ROUTES
 Route::middleware(['auth:sanctum'])->group(function () {
     // User Product Actions
     Route::post('/products/{product}/toggle-vote', [ProductController::class, 'toggleVote'])->name('products.toggleVote');
@@ -90,4 +92,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', [OrderController::class, 'store'])->name('orders.store');
         Route::get('/{order}', [OrderController::class, 'show'])->name('orders.show');
     });
+
+    // STRIPE PAYMENT ROUTE
+    Route::post('/stripe/create-checkout-session', [StripeController::class, 'createCheckoutSession']);
+    Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 });
