@@ -20,6 +20,10 @@ class Order extends Model
         'status' => OrderStatus::class,
     ];
 
+    protected $hidden = [
+        'user_id',
+    ];
+
     /**
      * Relation avec l'utilisateur
      */

@@ -19,7 +19,6 @@ class ProductSeeder extends Seeder
                 'description' => 'A powerful smartphone with 128GB storage.',
                 'price' => 599.99,
                 'stock' => 50,
-                'woodies' => 10,
                 'category_id' => Category::where('name', 'Electronics')->first()->id,
             ],
             [
@@ -27,7 +26,6 @@ class ProductSeeder extends Seeder
                 'description' => 'A bestselling fiction novel.',
                 'price' => 15.99,
                 'stock' => 100,
-                'woodies' => 2,
                 'category_id' => Category::where('name', 'Books')->first()->id,
             ],
             [
@@ -35,7 +33,6 @@ class ProductSeeder extends Seeder
                 'description' => 'A comfortable cotton T-Shirt.',
                 'price' => 19.99,
                 'stock' => 200,
-                'woodies' => 1,
                 'category_id' => Category::where('name', 'Clothing')->first()->id,
             ],
             [
@@ -43,7 +40,6 @@ class ProductSeeder extends Seeder
                 'description' => 'A high-speed blender for smoothies.',
                 'price' => 89.99,
                 'stock' => 30,
-                'woodies' => 5,
                 'category_id' => Category::where('name', 'Home & Kitchen')->first()->id,
             ],
         ];

@@ -23,7 +23,6 @@ return new class extends Migration {
             $table->text('description');
             $table->decimal('price', 7, 2);
             $table->integer('stock')->default(0);
-            $table->integer('woodies')->default(0);
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });

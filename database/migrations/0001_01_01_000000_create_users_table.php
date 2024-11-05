@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->string('password');
             $table->enum('role', [UserRole::ADMIN->value, UserRole::USER->value])->default(UserRole::USER->value);
             $table->rememberToken();
+            $table->string('google_id')->nullable()->unique();
             $table->timestamps();
         });
 

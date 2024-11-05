@@ -14,13 +14,14 @@ class Product extends Model
         'description',
         'price',
         'stock',
-        'woodies',
         'category_id',
     ];
 
     protected $hidden = [
         'category_id',
     ];
+
+    // protected $appends = ['vote_count'];
 
     /**
      * Relation ManyToOne avec Category
@@ -45,5 +46,21 @@ class Product extends Model
     {
         return $this->belongsToMany(Order::class, 'order_products')
             ->withPivot('price', 'quantity');
+    }
+
+    /**
+     * Relation avec les votes (ProductVote)
+     */
+    public function productVotes()
+    {
+        return $this->hasMany(ProductVote::class);
+    }
+
+    /**
+     * Accesseur pour compter les votes dynamiquement
+     */
+    public function getVoteCountAttribute()
+    {
+        return $this->productVotes()->count();
     }
 }

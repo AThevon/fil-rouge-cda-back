@@ -8,15 +8,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Models\OrderProduct;
+use Illuminate\Http\JsonResponse;
 
 class OrderController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(): JsonResponse
     {
-        //
+        $orders = Order::with(['orderProducts.product', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        return response()->json($orders);
+    }
+
+    public function indexByUser(): JsonResponse
+    {
+        $orders = Order::with('orderProducts.product')->where('user_id', Auth::id())->orderBy('created_at', 'desc')->get();
+        return response()->json($orders);
     }
 
     /**
@@ -30,7 +40,7 @@ class OrderController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'products' => 'required|array',
@@ -73,7 +83,8 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        //
+        $order->load('orderProducts.product');
+        return response()->json($order);
     }
 
     /**
