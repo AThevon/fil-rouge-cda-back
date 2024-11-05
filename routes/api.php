@@ -12,67 +12,82 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Auth\SocialiteController;
 
-
-
+// GUEST ROUTES (Accessible without authentication)
 Route::middleware(['guest'])->group(function () {
+    // Registration and Login
     Route::post('/register', [RegisteredUserController::class, 'store'])->name('register');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
+
+    // Password Reset
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
     Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 });
 
+// SOCIAL AUTHENTICATION (Google)
 Route::get('auth/google/redirect', [SocialiteController::class, 'redirectToGoogle']);
 Route::post('auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
 
+// AUTHENTICATED USER ROUTES (Require auth:sanctum middleware)
 Route::middleware(['auth:sanctum'])->group(function () {
-    // AUTH
+    // User Account Management
     Route::get('/user', [RegisteredUserController::class, 'show'])->name('user.show');
     Route::put('/user', [RegisteredUserController::class, 'update'])->name('user.update');
     Route::put('/user/password', [RegisteredUserController::class, 'updatePassword'])->name('user.updatePassword');
     Route::delete('/user', [RegisteredUserController::class, 'destroy'])->name('user.destroy');
+
+    // Email Verification
     Route::get('/verify-email/{id}/{hash}', [VerifyEmailController::class, 'verify'])
         ->middleware(['signed', 'throttle:6,1'])
         ->name('verification.verify');
     Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
-    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-        ->name('logout');
 
+    // Logout
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
-// PRODUCTS
-Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+// PUBLIC PRODUCTS AND CATEGORIES ROUTES
+// These routes do not require authentication
+Route::prefix('products')->group(function () {
+    Route::get('/', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/{product}', [ProductController::class, 'show'])->name('products.show');
+});
 
-// CATEGORIES
-Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
-Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
+Route::prefix('categories')->group(function () {
+    Route::get('/', [CategoryController::class, 'index'])->name('categories.index');
+    Route::get('/{category}', [CategoryController::class, 'show'])->name('categories.show');
+});
 
+// ADMIN-ONLY ROUTES (auth:sanctum and admin middleware required)
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
-    // Products
-    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
-    Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
-    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    // Admin Product Management
+    Route::prefix('products')->group(function () {
+        Route::post('/', [ProductController::class, 'store'])->name('products.store');
+        Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    });
 
-    // Categories
-    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-    Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+    // Admin Category Management
+    Route::prefix('categories')->group(function () {
+        Route::post('/', [CategoryController::class, 'store'])->name('categories.store');
+        Route::put('/{category}', [CategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+    });
 
-    // Orders
+    // Admin Orders Management
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
 });
 
+// AUTHENTICATED USER ROUTES (Require auth:sanctum middleware)
 Route::middleware(['auth:sanctum'])->group(function () {
-    // PRODUCTS
+    // User Product Actions
     Route::post('/products/{product}/toggle-vote', [ProductController::class, 'toggleVote'])->name('products.toggleVote');
 
-    // ORDERS
-    Route::get('/orders/user', [OrderController::class, 'indexByUser'])->name('orders.indexByUser');
-    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
-    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-
+    // User Orders Management
+    Route::prefix('orders')->group(function () {
+        Route::get('/user', [OrderController::class, 'indexByUser'])->name('orders.indexByUser');
+        Route::post('/', [OrderController::class, 'store'])->name('orders.store');
+        Route::get('/{order}', [OrderController::class, 'show'])->name('orders.show');
+    });
 });
-
-
