@@ -15,12 +15,13 @@ class SocialiteController extends Controller
    */
   public function redirectToGoogle()
   {
-    return Socialite::driver('google')->stateless()->redirect();
+    return Socialite::driver('google')->redirect();
   }
 
   /**
    * Gérer le retour de Google.
    */
+  // SocialiteController.php
   public function handleGoogleCallback()
   {
     try {
@@ -28,25 +29,25 @@ class SocialiteController extends Controller
       $googleUser = Socialite::driver('google')->stateless()->user();
 
       if (!$googleUser || !$googleUser->getEmail()) {
-        return response()->json(['error' => 'Invalid Google token or no email returned'], 401);
+        return redirect(env('FRONTEND_URL') . '?auth=error');
       }
 
-      // Créer ou trouver l'utilisateur dans la base de données
-      $user = User::firstOrCreate(
+      // Créer ou mettre à jour l'utilisateur dans la base de données
+      $user = User::updateOrCreate(
         ['email' => $googleUser->getEmail()],
         [
           'name' => $googleUser->getName(),
+          'google_id' => $googleUser->getId(),
           'password' => bcrypt(uniqid()), // Mot de passe temporaire
         ]
       );
 
-      // Connecter l'utilisateur via Laravel Auth (session)
       Auth::login($user);
+      session()->regenerate();
 
-      // Rediriger l'utilisateur vers l'application frontend
       return redirect(env('FRONTEND_URL'));
     } catch (\Exception $e) {
-      return response()->json(['error' => 'Failed to authenticate with Google'], 500);
+      return redirect(env('FRONTEND_URL') . '?auth=error');
     }
   }
 }
