@@ -18,16 +18,12 @@ use App\Http\Controllers\Stripe\StripeWebhookController;
 Route::middleware(['guest'])->group(function () {
   // Registration and Login
   Route::post('/register', [RegisteredUserController::class, 'store'])->name('register');
-  Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
 
   // Password Reset
   Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
   Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 });
 
-// SOCIAL AUTHENTICATION (Google)
-Route::get('auth/google/redirect', [SocialiteController::class, 'redirectToGoogle']);
-Route::post('auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
 
 // AUTHENTICATED USER ROUTES (Require auth:sanctum middleware)
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -44,13 +40,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
   Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
     ->middleware('throttle:6,1')
     ->name('verification.send');
-
-  // Logout
-  Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
 // PUBLIC PRODUCTS AND CATEGORIES ROUTES
-// These routes do not require authentication
 Route::prefix('products')->group(function () {
   Route::get('/', [ProductController::class, 'index'])->name('products.index');
   Route::get('/{product}', [ProductController::class, 'show'])->name('products.show');

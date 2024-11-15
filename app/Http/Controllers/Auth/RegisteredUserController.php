@@ -15,111 +15,112 @@ use Illuminate\Support\Facades\Validator;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
+  /**
+   * Handle an incoming registration request.
+   *
+   * @throws \Illuminate\Validation\ValidationException
+   */
 
-    public function show()
-    {
-        $user = Auth::user();
+  public function show()
+  {
+    $user = Auth::user();
 
-        return response()->json(['user' => $user]);
+    return response()->json(['user' => $user]);
+  }
+
+  public function store(Request $request): JsonResponse
+  {
+    $validator = Validator::make($request->all(), [
+      'name' => ['required', 'string', 'max:255'],
+      'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+      'password' => ['required', 'confirmed', Password::defaults()],
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json([
+        'errors' => $validator->errors()
+      ], 422);
     }
 
-    public function store(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'password' => ['required', 'confirmed', Password::defaults()],
-        ]);
+    $user = User::create([
+      'name' => $request->name,
+      'email' => $request->email,
+      'password' => Hash::make($request->string('password')),
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
-        }
+    event(new Registered($user));
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->string('password')),
-        ]);
+    // Connecter l'utilisateur via session
+    Auth::login($user);
 
-        event(new Registered($user));
+    return response()->json([
+      'user' => $user,
+      'message' => 'User registered and logged in successfully'
+    ], 201);
+  }
 
-        $token = $user->createToken('API Token')->plainTextToken;
+  public function update(Request $request): JsonResponse
+  {
+    $user = Auth::user();
 
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ], 201);
+    $validator = Validator::make($request->all(), [
+      'name' => 'sometimes|required|string|max:255',
+      'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
+      'password' => 'sometimes|confirmed|min:8',
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json([
+        'errors' => $validator->errors()
+      ], 422);
     }
 
-    public function update(Request $request): JsonResponse
-    {
-        $user = Auth::user();
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
-            'password' => 'sometimes|confirmed|min:8',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        if ($request->has('name')) {
-            $user->name = $request->name;
-        }
-        if ($request->has('email')) {
-            $user->email = $request->email;
-        }
-        if ($request->has('password')) {
-            $user->password = Hash::make($request->password);
-        }
-
-        $user->save();
-
-        return response()->json(['user' => $user, 'message' => 'User updated successfully']);
+    if ($request->has('name')) {
+      $user->name = $request->name;
     }
-    public function updatePassword(Request $request): JsonResponse
-    {
-        $user = Auth::user();
-
-        $validator = Validator::make($request->all(), [
-            'current_password' => 'required',
-            'password' => 'required|confirmed|min:8',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json([
-                'errors' => ['current_password' => ['The provided password does not match your current password.']]
-            ], 422);
-        }
-
-        $user->password = Hash::make($request->password);
-        $user->save();
-
-        return response()->json(['message' => 'Password updated successfully']);
+    if ($request->has('email')) {
+      $user->email = $request->email;
+    }
+    if ($request->has('password')) {
+      $user->password = Hash::make($request->password);
     }
 
-    public function destroy($id)
-    {
-        $user = Auth::user();
-        $user->delete();
+    $user->save();
 
-        return response()->json(['message' => 'User deleted successfully']);
+    return response()->json(['user' => $user, 'message' => 'User updated successfully']);
+  }
+  public function updatePassword(Request $request): JsonResponse
+  {
+    $user = Auth::user();
+
+    $validator = Validator::make($request->all(), [
+      'current_password' => 'required',
+      'password' => 'required|confirmed|min:8',
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json([
+        'errors' => $validator->errors()
+      ], 422);
     }
+
+    if (!Hash::check($request->current_password, $user->password)) {
+      return response()->json([
+        'errors' => ['current_password' => ['The provided password does not match your current password.']]
+      ], 422);
+    }
+
+    $user->password = Hash::make($request->password);
+    $user->save();
+
+    return response()->json(['message' => 'Password updated successfully']);
+  }
+
+  public function destroy($id)
+  {
+    $user = Auth::user();
+    $user->delete();
+
+    return response()->json(['message' => 'User deleted successfully']);
+  }
 }
