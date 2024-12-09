@@ -46,7 +46,7 @@ class OrderController extends Controller
       'products' => 'required|array',
       'products.*.id' => 'required|exists:products,id',
       'products.*.quantity' => 'required|integer|min:1',
-      'products.*.price' => 'required|numeric|min:0',
+      'products.*.price' => 'required|integer|min:0',
     ]);
 
     if ($validator->fails()) {

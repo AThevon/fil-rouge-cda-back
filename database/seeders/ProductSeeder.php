@@ -19,7 +19,7 @@ class ProductSeeder extends Seeder
       [
         'name' => 'Smartphone',
         'description' => 'A powerful smartphone with 128GB storage.',
-        'price' => 599.99,
+        'price' => 59999,
         'stock' => 50,
         'category_id' => Category::where('name', CategoryName::FRAME->value)->first()->id,
         'images' => [
@@ -29,7 +29,7 @@ class ProductSeeder extends Seeder
       [
         'name' => 'Fiction Novel',
         'description' => 'A bestselling fiction novel.',
-        'price' => 15.99,
+        'price' => 1599,
         'stock' => 100,
         'category_id' => Category::where('name', CategoryName::TOTEM->value)->first()->id,
         'images' => [
@@ -39,7 +39,7 @@ class ProductSeeder extends Seeder
       [
         'name' => 'T-Shirt',
         'description' => 'A comfortable cotton T-Shirt.',
-        'price' => 19.99,
+        'price' => 1999,
         'stock' => 200,
         'category_id' => Category::where('name', CategoryName::LEDS->value)->first()->id,
         'images' => [
