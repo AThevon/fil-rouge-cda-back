@@ -21,7 +21,7 @@ class PaymentController extends Controller
          return response()->json(['error' => 'Order ID is required'], 400);
       }
 
-      $order = Order::with('products')->find($orderId);
+      $order = Order::with('products.images')->find($orderId);
 
       if (!$order) {
          return response()->json(['error' => 'Order not found'], 404);
@@ -29,13 +29,17 @@ class PaymentController extends Controller
 
       // Préparer les items pour Stripe Checkout
       $lineItems = $order->products->map(function ($product) {
+         // Récupérer la première image publique du produit
+         $image = $product->images->firstWhere('type', 'public')?->url;
+
          return [
             'price_data' => [
                'currency' => env('CASHIER_CURRENCY', 'eur'),
                'product_data' => [
                   'name' => $product->name,
+                  'images' => $image ? [$image] : [], // Ajoute l'image si disponible
                ],
-               'unit_amount' => $product->price, // Convertir en centimes
+               'unit_amount' => $product->price,
             ],
             'quantity' => $product->pivot->quantity, // Quantité commandée
          ];
@@ -52,6 +56,7 @@ class PaymentController extends Controller
 
       return response()->json(['id' => $session->id]);
    }
+
 
    public function index()
    {
