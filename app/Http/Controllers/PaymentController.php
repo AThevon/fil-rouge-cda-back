@@ -27,9 +27,7 @@ class PaymentController extends Controller
          return response()->json(['error' => 'Order not found'], 404);
       }
 
-      // Préparer les items pour Stripe Checkout
       $lineItems = $order->products->map(function ($product) {
-         // Récupérer la première image publique du produit
          $image = $product->images->firstWhere('type', 'public')?->url;
 
          return [
@@ -37,15 +35,14 @@ class PaymentController extends Controller
                'currency' => env('CASHIER_CURRENCY', 'eur'),
                'product_data' => [
                   'name' => $product->name,
-                  'images' => $image ? [$image] : [], // Ajoute l'image si disponible
+                  'images' => $image ? [$image] : [],
                ],
                'unit_amount' => $product->price,
             ],
-            'quantity' => $product->pivot->quantity, // Quantité commandée
+            'quantity' => $product->pivot->quantity,
          ];
       })->toArray();
 
-      // Création d'une session Stripe Checkout
       $session = $user->checkout(
          $lineItems,
          [

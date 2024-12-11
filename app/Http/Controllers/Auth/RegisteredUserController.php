@@ -50,7 +50,6 @@ class RegisteredUserController extends Controller
 
     event(new Registered($user));
 
-    // Connecter l'utilisateur via session
     Auth::login($user);
 
     return response()->json([

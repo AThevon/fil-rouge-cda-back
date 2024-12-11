@@ -23,7 +23,6 @@ class AuthenticatedSessionController extends Controller
       return response()->json(['error' => 'The provided credentials are incorrect.'], 401);
     }
 
-    // Connecter l'utilisateur via Laravel Auth (session)
     Auth::login($user);
 
     return response()->json(['user' => $user], 200);
@@ -34,17 +33,13 @@ class AuthenticatedSessionController extends Controller
    */
   public function destroy(Request $request)
   {
-    // Déconnecter l'utilisateur (session)
     Auth::logout();
 
-    // Invalider la session
     $request->session()->invalidate();
     $request->session()->regenerateToken();
 
-    // Supprimer le cookie CSRF
     $cookie = cookie()->forget('XSRF-TOKEN');
 
-    // Retourner une réponse JSON sans redirection
     return response()->json(['message' => 'Logged out successfully'], 200)->withCookie($cookie);
   }
 }

@@ -25,20 +25,18 @@ class SocialiteController extends Controller
   public function handleGoogleCallback()
   {
     try {
-      // Récupérer les informations de l'utilisateur Google
       $googleUser = Socialite::driver('google')->stateless()->user();
 
       if (!$googleUser || !$googleUser->getEmail()) {
         return redirect(env('FRONTEND_URL') . '?auth=error');
       }
 
-      // Créer ou mettre à jour l'utilisateur dans la base de données
       $user = User::updateOrCreate(
         ['email' => $googleUser->getEmail()],
         [
           'name' => $googleUser->getName(),
           'google_id' => $googleUser->getId(),
-          'password' => bcrypt(uniqid()), // Mot de passe temporaire
+          'password' => bcrypt(uniqid()),
         ]
       );
 

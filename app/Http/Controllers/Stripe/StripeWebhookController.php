@@ -46,7 +46,7 @@ class StripeWebhookController extends Controller
                   'order_id' => $order->id,
                   'stripe_session_id' => $session->id,
                   'stripe_payment_intent_id' => $session->payment_intent,
-                  'amount' => $session->amount_total / 100, // Convertir en euros
+                  'amount' => $session->amount_total / 100,
                   'currency' => $session->currency,
                   'status' => PaymentStatus::COMPLETED,
                ]);
