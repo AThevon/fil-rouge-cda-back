@@ -12,114 +12,128 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
 
 class RegisteredUserController extends Controller
 {
-  /**
-   * Handle an incoming registration request.
-   *
-   * @throws \Illuminate\Validation\ValidationException
-   */
+   /**
+    * Handle an incoming registration request.
+    *
+    * @throws \Illuminate\Validation\ValidationException
+    */
 
-  public function show()
-  {
-    $user = Auth::user();
+   public function show()
+   {
+      $user = Auth::user();
 
-    return response()->json(['user' => $user]);
-  }
+      return response()->json(['user' => $user]);
+   }
 
-  public function store(Request $request): JsonResponse
-  {
-    $validator = Validator::make($request->all(), [
-      'name' => ['required', 'string', 'max:255'],
-      'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-      'password' => ['required', 'confirmed', Password::defaults()],
-    ]);
+   public function store(Request $request): JsonResponse
+   {
+      $validator = Validator::make($request->all(), [
+         'name' => ['required', 'string', 'max:255'],
+         'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+         'password' => ['required', 'confirmed', Password::defaults()],
+         'turnstile' => ['required', 'string'],
+      ]);
 
-    if ($validator->fails()) {
+      if ($validator->fails()) {
+         return response()->json([
+            'errors' => $validator->errors()
+         ], 422);
+      }
+      // Validation Turnstile (Captcha)
+      $turnstileResponse = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+         'secret' => env('TURNSTILE_SECRET_KEY'),
+         'response' => $request->turnstile,
+      ]);
+
+      $turnstileValidation = $turnstileResponse->json();
+
+      if (!$turnstileValidation['success']) {
+         return response()->json([
+            'errors' => ['turnstile' => ['Turnstile validation failed.']],
+         ], 422);
+      }
+
+      $user = User::create([
+         'name' => $request->name,
+         'email' => $request->email,
+         'password' => Hash::make($request->string('password')),
+      ]);
+
+      event(new Registered($user));
+      Auth::login($user);
+
       return response()->json([
-        'errors' => $validator->errors()
-      ], 422);
-    }
+         'user' => $user,
+         'message' => 'User registered and logged in successfully'
+      ], 201);
+   }
 
-    $user = User::create([
-      'name' => $request->name,
-      'email' => $request->email,
-      'password' => Hash::make($request->string('password')),
-    ]);
+   public function update(Request $request): JsonResponse
+   {
+      $user = Auth::user();
 
-    event(new Registered($user));
+      $validator = Validator::make($request->all(), [
+         'name' => 'sometimes|required|string|max:255',
+         'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
+         'password' => 'sometimes|confirmed|min:8',
+      ]);
 
-    Auth::login($user);
+      if ($validator->fails()) {
+         return response()->json([
+            'errors' => $validator->errors()
+         ], 422);
+      }
 
-    return response()->json([
-      'user' => $user,
-      'message' => 'User registered and logged in successfully'
-    ], 201);
-  }
+      if ($request->has('name')) {
+         $user->name = $request->name;
+      }
+      if ($request->has('email')) {
+         $user->email = $request->email;
+      }
+      if ($request->has('password')) {
+         $user->password = Hash::make($request->password);
+      }
 
-  public function update(Request $request): JsonResponse
-  {
-    $user = Auth::user();
+      $user->save();
 
-    $validator = Validator::make($request->all(), [
-      'name' => 'sometimes|required|string|max:255',
-      'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
-      'password' => 'sometimes|confirmed|min:8',
-    ]);
+      return response()->json(['user' => $user, 'message' => 'User updated successfully']);
+   }
+   public function updatePassword(Request $request): JsonResponse
+   {
+      $user = Auth::user();
 
-    if ($validator->fails()) {
-      return response()->json([
-        'errors' => $validator->errors()
-      ], 422);
-    }
+      $validator = Validator::make($request->all(), [
+         'current_password' => 'required',
+         'password' => 'required|confirmed|min:8',
+      ]);
 
-    if ($request->has('name')) {
-      $user->name = $request->name;
-    }
-    if ($request->has('email')) {
-      $user->email = $request->email;
-    }
-    if ($request->has('password')) {
+      if ($validator->fails()) {
+         return response()->json([
+            'errors' => $validator->errors()
+         ], 422);
+      }
+
+      if (!Hash::check($request->current_password, $user->password)) {
+         return response()->json([
+            'errors' => ['current_password' => ['The provided password does not match your current password.']]
+         ], 422);
+      }
+
       $user->password = Hash::make($request->password);
-    }
+      $user->save();
 
-    $user->save();
+      return response()->json(['message' => 'Password updated successfully']);
+   }
 
-    return response()->json(['user' => $user, 'message' => 'User updated successfully']);
-  }
-  public function updatePassword(Request $request): JsonResponse
-  {
-    $user = Auth::user();
+   public function destroy($id)
+   {
+      $user = Auth::user();
+      $user->delete();
 
-    $validator = Validator::make($request->all(), [
-      'current_password' => 'required',
-      'password' => 'required|confirmed|min:8',
-    ]);
-
-    if ($validator->fails()) {
-      return response()->json([
-        'errors' => $validator->errors()
-      ], 422);
-    }
-
-    if (!Hash::check($request->current_password, $user->password)) {
-      return response()->json([
-        'errors' => ['current_password' => ['The provided password does not match your current password.']]
-      ], 422);
-    }
-
-    $user->password = Hash::make($request->password);
-    $user->save();
-
-    return response()->json(['message' => 'Password updated successfully']);
-  }
-
-  public function destroy($id)
-  {
-    $user = Auth::user();
-    $user->delete();
-
-    return response()->json(['message' => 'User deleted successfully']);
-  }
+      return response()->json(['message' => 'User deleted successfully']);
+   }
 }

@@ -12,12 +12,9 @@ use Illuminate\Http\JsonResponse;
 
 class OrderController extends Controller
 {
-   /**
-    * Display a listing of the resource.
-    */
    public function index(): JsonResponse
    {
-      $orders = Order::with('orderProducts.product.images')
+      $orders = Order::with(['orderProducts.product.images', 'payment'])
          ->where('user_id', Auth::id())
          ->orderBy('created_at', 'desc')
          ->get();
@@ -65,8 +62,7 @@ class OrderController extends Controller
 
    public function show(Order $order)
    {
-      $order->load('orderProducts.product.images');
+      $order->load(['orderProducts.product.images', 'payment']);
       return response()->json($order);
    }
-
 }

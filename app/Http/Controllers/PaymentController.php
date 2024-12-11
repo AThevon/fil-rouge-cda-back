@@ -2,31 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Payment;
 use Illuminate\Http\Request;
 use App\Models\Order;
+use Illuminate\Support\Facades\Validator;
 
 
 class PaymentController extends Controller
 {
-   /**
-    * Display a listing of the resource.
-    */
-   public function checkout(Request $request)
+   public function store(Request $request)
    {
-      $user = $request->user();
-      $orderId = $request->orderId;
+      // Validation des données entrantes
+      $validator = Validator::make($request->all(), [
+         'orderId' => 'required|exists:orders,id',
+      ]);
 
-      if (!$orderId) {
-         return response()->json(['error' => 'Order ID is required'], 400);
+      if ($validator->fails()) {
+         return response()->json(['errors' => $validator->errors()], 422);
       }
 
-      $order = Order::with('products.images')->find($orderId);
+      // Récupération de la commande
+      $order = Order::with('products.images')->find($request->orderId);
 
-      if (!$order) {
-         return response()->json(['error' => 'Order not found'], 404);
+      // Vérification du statut de la commande
+      if ($order->status !== 'pending') {
+         return response()->json(['error' => 'Cannot process payment for this order'], 400);
       }
 
+      // Préparation des articles pour Stripe Checkout
       $lineItems = $order->products->map(function ($product) {
          $image = $product->images->firstWhere('type', 'public')?->url;
 
@@ -43,7 +45,8 @@ class PaymentController extends Controller
          ];
       })->toArray();
 
-      $session = $user->checkout(
+      // Création de la session Stripe
+      $session = $request->user()->checkout(
          $lineItems,
          [
             'success_url' => env('FRONTEND_URL') . '/payment/success?session_id={CHECKOUT_SESSION_ID}',
@@ -51,60 +54,7 @@ class PaymentController extends Controller
          ]
       );
 
+      // Retour de l'ID de la session Stripe
       return response()->json(['id' => $session->id]);
-   }
-
-
-   public function index()
-   {
-      //
-   }
-
-   /**
-    * Show the form for creating a new resource.
-    */
-   public function create()
-   {
-      //
-   }
-
-   /**
-    * Store a newly created resource in storage.
-    */
-   public function store(Request $request)
-   {
-      //
-   }
-
-   /**
-    * Display the specified resource.
-    */
-   public function show(Payment $payment)
-   {
-      //
-   }
-
-   /**
-    * Show the form for editing the specified resource.
-    */
-   public function edit(Payment $payment)
-   {
-      //
-   }
-
-   /**
-    * Update the specified resource in storage.
-    */
-   public function update(Request $request, Payment $payment)
-   {
-      //
-   }
-
-   /**
-    * Remove the specified resource from storage.
-    */
-   public function destroy(Payment $payment)
-   {
-      //
    }
 }

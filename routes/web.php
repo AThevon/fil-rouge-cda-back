@@ -16,7 +16,8 @@ Route::get('/sanctum/csrf-cookie', function () {
 
 
 Route::middleware(['web'])->group(function () {
-   Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
+   Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login')
+   ->middleware('throttle:6,1');
    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
    Route::get('/auth/google/redirect', [SocialiteController::class, 'redirectToGoogle']);
    Route::get('/auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
@@ -25,5 +26,3 @@ Route::middleware(['web'])->group(function () {
 
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle'])
    ->withoutMiddleware([VerifyCsrfToken::class]);
-   
-

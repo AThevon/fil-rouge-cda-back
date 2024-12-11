@@ -12,14 +12,14 @@ class Payment extends Model
 
    protected $fillable = [
       'order_id',
-      'stripe_session_id', // ID de la session Stripe Checkout
-      'stripe_payment_intent_id', // ID de l'intent de paiement
-      'stripe_charge_id', // ID de la charge Stripe
+      'stripe_session_id',
+      'stripe_payment_intent_id',
+      'stripe_charge_id',
       'amount',
       'currency',
       'status',
-      'payment_method', // Carte, wallet, etc.
-      'receipt_url', // Lien vers le reçu Stripe
+      'payment_method',
+      'receipt_url',
    ];
 
    protected $casts = [
