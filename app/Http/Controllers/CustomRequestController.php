@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use App\Mail\CustomRequestMail;
+use Illuminate\Support\Facades\Mail;
+
 
 class CustomRequestController extends Controller
 {
@@ -42,6 +45,7 @@ class CustomRequestController extends Controller
          'user_id' => $request->user()->id,
       ]);
 
+      // Gestion des images
       if ($request->hasFile('images')) {
          foreach ($request->file('images') as $image) {
             $path = $image->store('custom_requests', 's3');
@@ -54,15 +58,27 @@ class CustomRequestController extends Controller
          }
       }
 
+      // Charger les relations pour l'email
+      $customRequest->load(['images', 'category']);
+
+      // Préparer les données pour l'email
+      $emailData = [
+         'user_name' => Auth::user()->name,
+         'user_email' => Auth::user()->email,
+         'phone' => $customRequest->phone,
+         'message' => $customRequest->message,
+         'category' => $customRequest->category->name,
+         'images' => $customRequest->images->pluck('url')->toArray(),
+      ];
+
+      // Envoyer l'email
+      Mail::to(config('mail.from.address'))->send(new CustomRequestMail($emailData));
+
       return response()->json($customRequest->load('images'), 201);
    }
 
    public function show(CustomRequest $customRequest)
    {
-      if ($customRequest->user_id !== Auth::id()) {
-         return response()->json(['message' => 'Unauthorized'], 403);
-      }
-
       $customRequest->load(['images', 'category.images']);
       return response()->json($customRequest);
    }

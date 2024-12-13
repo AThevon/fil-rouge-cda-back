@@ -11,6 +11,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\CustomRequestController;
+use App\Http\Controllers\ContactController;
 
 
 // GUEST ROUTES (Accessible without authentication)
@@ -34,6 +35,10 @@ Route::middleware(['guest'])
 
       Route::get('/categories', [CategoryController::class, 'index'])
          ->name('categories.index');
+
+      Route::post('/contact', [ContactController::class, 'send'])
+         ->middleware('throttle:6,1')
+         ->name('contact.send');
    });
 
 
@@ -79,6 +84,3 @@ Route::middleware(['auth:sanctum'])->group(function () {
    Route::post('/payment', [PaymentController::class, 'store'])
       ->name('payment.store');
 });
-
-
-require __DIR__ . '/admin.php';
