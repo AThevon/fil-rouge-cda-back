@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use App\Mail\CustomRequestMail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 
 class CustomRequestController extends Controller
@@ -27,10 +28,10 @@ class CustomRequestController extends Controller
    public function store(Request $request): JsonResponse
    {
       $validator = Validator::make($request->all(), [
-         'phone' => 'nullable|string|max:15',
          'message' => 'required|string|max:1000',
          'category_id' => 'required|exists:categories,id',
-         'images.*' => 'image|max:10240', // 10MB
+         'images' => 'array', // S'assurer que 'images' est un tableau
+         'images.*' => 'nullable|image|max:10240', // Chaque fichier doit être une image valide et <= 10 MB
       ]);
 
       if ($validator->fails()) {
@@ -39,7 +40,6 @@ class CustomRequestController extends Controller
 
       $customRequest = CustomRequest::create([
          'email' => Auth::user()->email,
-         'phone' => $request->phone,
          'message' => $request->message,
          'category_id' => $request->category_id,
          'user_id' => $request->user()->id,
@@ -65,11 +65,12 @@ class CustomRequestController extends Controller
       $emailData = [
          'user_name' => Auth::user()->name,
          'user_email' => Auth::user()->email,
-         'phone' => $customRequest->phone,
          'message' => $customRequest->message,
          'category' => $customRequest->category->name,
          'images' => $customRequest->images->pluck('url')->toArray(),
       ];
+
+      Log::info('Données pour l’email', $emailData);
 
       // Envoyer l'email
       Mail::to(config('mail.from.address'))->send(new CustomRequestMail($emailData));

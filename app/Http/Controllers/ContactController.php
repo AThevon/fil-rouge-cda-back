@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use App\Mail\ContactMail;
+use App\Mail\ContactUserMail;
 
 class ContactController extends Controller
 {
@@ -29,8 +30,9 @@ class ContactController extends Controller
          'message' => $request->message,
       ];
 
-      // Envoyer l'email
+      // Envoyer les emails
       Mail::to(config('mail.from.address'))->send(new ContactMail($emailData));
+      Mail::to($request->email)->send(new ContactUserMail($emailData));
 
       return response()->json(['message' => 'Votre message a été envoyé avec succès.'], 200);
    }

@@ -27,19 +27,22 @@ Route::middleware(['guest'])
 
       Route::post('/reset-password', [NewPasswordController::class, 'store'])
          ->name('password.store');
-
-      Route::prefix('products')->group(function () {
-         Route::get('/', [ProductController::class, 'index'])->name('products.index');
-         Route::get('/{product}', [ProductController::class, 'show'])->name('products.show');
-      });
-
-      Route::get('/categories', [CategoryController::class, 'index'])
-         ->name('categories.index');
-
-      Route::post('/contact', [ContactController::class, 'send'])
-         ->middleware('throttle:6,1')
-         ->name('contact.send');
    });
+
+
+// PUBLIC ROUTES
+Route::prefix('products')->group(function () {
+   Route::get('/', [ProductController::class, 'index'])->name('products.index');
+   Route::get('/{product}', [ProductController::class, 'show'])->name('products.show');
+});
+
+Route::get('/categories', [CategoryController::class, 'index'])
+   ->name('categories.index');
+
+Route::post('/contact', [ContactController::class, 'send'])
+   ->middleware('throttle:6,1')
+   ->name('contact.send');
+
 
 
 // AUTHENTICATED USER ROUTES

@@ -14,7 +14,6 @@ class CustomRequest extends Model
 
   protected $fillable = [
     'email',
-    'phone',
     'message',
     'category_id',
     'user_id',

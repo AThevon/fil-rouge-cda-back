@@ -12,55 +12,73 @@ use Illuminate\Queue\SerializesModels;
 
 class CustomRequestMail extends Mailable
 {
-    use Queueable, SerializesModels;
+   use Queueable, SerializesModels;
 
-    public $data;
+   public $data;
+   private $temporaryFiles = [];
 
-    /**
-     * Create a new message instance.
-     */
-    public function __construct(array $data)
-    {
-        $this->data = $data;
-    }
+   /**
+    * Create a new message instance.
+    */
+   public function __construct(array $data)
+   {
+      $this->data = $data;
+   }
 
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
-    {
-        return new Envelope(
-            subject: 'Nouvelle demande personnalisée'
-        );
-    }
+   /**
+    * Get the message envelope.
+    */
+   public function envelope(): Envelope
+   {
+      return new Envelope(
+         subject: 'Nouvelle demande personnalisée'
+      );
+   }
 
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
-    {
-        return new Content(
-            view: 'emails.custom_request',
-            with: ['data' => $this->data]
-        );
-    }
+   /**
+    * Get the message content definition.
+    */
+   public function content(): Content
+   {
+      return new Content(
+         view: 'emails.custom_request',
+         with: ['data' => $this->data]
+      );
+   }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, Attachment>
-     */
-    public function attachments(): array
-    {
-        $attachments = [];
+   /**
+    * Get the attachments for the message.
+    *
+    * @return array<int, Attachment>
+    */
+   public function attachments(): array
+   {
+      $attachments = [];
 
-        if (!empty($this->data['images'])) {
-            foreach ($this->data['images'] as $imageUrl) {
-                $filePath = str_replace(config('filesystems.disks.s3.url') . '/', '', $imageUrl);
-                $attachments[] = Attachment::fromStorageDisk('s3', $filePath);
-            }
-        }
+      if (!empty($this->data['images'])) {
+         foreach ($this->data['images'] as $imageUrl) {
+            $tempFile = tempnam(sys_get_temp_dir(), 'attachment_');
+            file_put_contents($tempFile, file_get_contents($imageUrl));
 
-        return $attachments;
-    }
+            $attachments[] = Attachment::fromPath($tempFile)
+               ->as(basename($imageUrl)) // Définit le nom du fichier
+               ->withMime(mime_content_type($tempFile)); // Définit le type MIME
+
+            // Ajoute le fichier temporaire à la liste
+            $this->temporaryFiles[] = $tempFile;
+         }
+      }
+
+      return $attachments;
+   }
+
+   public function __destruct()
+   {
+      // Supprime les fichiers temporaires
+      foreach ($this->temporaryFiles as $file) {
+         if (file_exists($file)) {
+            unlink($file);
+         }
+      }
+   }
 }
